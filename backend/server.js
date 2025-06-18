@@ -1,48 +1,69 @@
-const io = require('socket.io')(3000, {
-  cors: {
-    origin: '*'
-  }
+
+// backend/server.js
+
+const express = require('express');
+const http    = require('http');
+const path    = require('path');
+const { Server } = require('socket.io');
+
+const app    = express();
+const server = http.createServer(app);
+
+// Configure Socket.IO with CORS so your front-end can connect
+const io = new Server(server, {
+  cors: { origin: '*' }
 });
 
-console.log('Server started, listening on port 3000');
+const PORT = process.env.PORT || 8080;
 
-io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.id}`);
-
-  socket.on('disconnect', () => {
-    console.log(`User disconnected: ${socket.id}`);
-  });
-});
-
+// Track connected players by socket ID
 let players = {};
 
-io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.id}`);
+// Serve your static front-end from ./frontend
+app.use(express.static(path.join(__dirname, 'frontend')));
 
-  // Assign player number
+// Start the server
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server started, listening on port ${PORT}`);
+});
+
+io.on('connection', socket => {
+  console.log(`🔌 User connected: ${socket.id}`);
+
+  // 1) Assign each new socket a player number
   const playerNumber = Object.keys(players).length < 1 ? 1 : 2;
   players[socket.id] = playerNumber;
   socket.emit('player-number', playerNumber);
+  console.log(`→ Assigned Player ${playerNumber}`);
 
-  // Notify both players when ready
+  // 2) As soon as the second player arrives, emit start-game
   if (Object.keys(players).length === 2) {
+    console.log('🌐 Both players connected – emitting start-game');
     io.emit('start-game');
   }
 
-  // Handle paddle movement
-  socket.on('paddle-move', (data) => {
+  // 3) Relay paddle moves
+  socket.on('paddle-move', data => {
     socket.broadcast.emit('opponent-paddle', data);
   });
 
-  // Handle ball movement from host
-  socket.on('ball-move', (data) => {
+  // 4) Relay ball updates
+  socket.on('ball-move', data => {
     socket.broadcast.emit('ball-update', data);
   });
 
-  // On disconnect
+  // 5) When Player 1 clicks Start, kick off the match
+  socket.on('begin-game', () => {
+    if (players[socket.id] === 1) {
+      console.log('▶️ Player 1 clicked Start – emitting game-started');
+      io.emit('game-started');
+    }
+  });
+
+  // 6) Clean up on disconnect
   socket.on('disconnect', () => {
+    console.log(`❌ User disconnected: ${socket.id}`);
     delete players[socket.id];
     io.emit('player-disconnect');
-    console.log(`User disconnected: ${socket.id}`);
   });
 });

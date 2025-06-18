@@ -1,0 +1,25 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>PongE</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Menu Screen -->
+  <div id="menu">
+    <h1>PongE</h1>
+    <button id="start-btn" disabled>Start</button>
+    <p id="waiting-text">Waiting for another player...</p>
+  </div>
+
+  <!-- Game Canvas -->
+  <canvas id="pong"></canvas>
+
+  <!-- Socket.IO and Game Script -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

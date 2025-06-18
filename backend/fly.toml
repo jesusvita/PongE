@@ -1,22 +1,30 @@
-# fly.toml app configuration file generated for ponge on 2025-06-17T19:36:00-04:00
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
 
-app = 'ponge'
-primary_region = 'mia'
+app = "ponge"
+kill_signal = "SIGINT"
+kill_timeout = 5
 
 [build]
+  # point Fly at your new Dockerfile
+  dockerfile = "Dockerfile"
 
-[http_service]
+[env]
+  PORT = "8080"
+
+[[services]]
   internal_port = 8080
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+  protocol = "tcp"
 
-[[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
-  cpus = 1
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  # health check
+  [[services.tcp_checks]]
+    interval = 10000
+    timeout = 2000
+    grace_period = "10s"
+    restart_limit = 0
