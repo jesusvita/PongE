@@ -23,6 +23,10 @@ let down       = false;
 let ball       = { x: canvas.width/2, y: canvas.height/2, vx: 5, vy: 4, radius: 8 };
 let playerNumber = 0;
 let gameStarted  = false;
+let playerNumber  = 0;
+let gameStarted   = false;
+let countdownEnd  = 0;   // timestamp when the countdown finishes
+
 
 // —————— Socket.IO Setup ——————
 const socket = io("https://ponge.fly.dev", {
@@ -59,7 +63,10 @@ startBtn.addEventListener("click", () => {
 socket.on("game-started", () => {
   console.log("▶️ Game actually started!");
   menu.style.display = "none";
-  gameStarted = true;
+  gameStarted  = true;
+  countdownEnd = Date.now() + 3000;      // 3 second countdown
+  ball.x = canvas.width / 2;             // ensure ball starts centered
+  ball.y = canvas.height / 2;
   requestAnimationFrame(loop);
 });
 
@@ -113,6 +120,11 @@ function updateState() {
 
   // Player 1 drives ball physics
   if (playerNumber === 1) {
+  // Wait for countdown before moving the ball
+    if (Date.now() < countdownEnd) {
+      socket.emit("ball-move", ball); // keep positions in sync
+      return;
+    }
     ball.x += ball.vx;
     ball.y += ball.vy;
 
@@ -156,7 +168,14 @@ function render() {
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
   ctx.fill();
 }
-
+// Countdown overlay
+  if (Date.now() < countdownEnd) {
+    const remaining = Math.ceil((countdownEnd - Date.now()) / 1000);
+    ctx.fillStyle = '#0f0';
+    ctx.font = "48px 'Press Start 2P', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText(remaining.toString(), canvas.width / 2, canvas.height / 2);
+  }
 // —————— Utility ——————
 function clamp(v, min, max) {
   return v < min ? min : v > max ? max : v;
