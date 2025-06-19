@@ -10,6 +10,11 @@ body {
   overflow: hidden;
 }
 
+/* Ensure canvas occupies the viewport even after the menu is hidden */
+html, body {
+  height: 100%;
+}
+
 /* MENU */
 #menu {
   position: absolute;

@@ -67,6 +67,7 @@ socket.on("game-started", () => {
   countdownEnd = Date.now() + COUNTDOWN_DURATION; // 3 second countdown
   ball.x = canvas.width / 2;             // ensure ball starts centered
   ball.y = canvas.height / 2;
+  requestAnimationFrame(loop);
 });
 
 // Opponent paddle updates
@@ -155,6 +156,7 @@ function updateState() {
 }
 
 // —————— Render Everything ——————
+
 function render() {
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -185,7 +187,8 @@ function render() {
   if (now < countdownEnd) {
     const remainingMs = countdownEnd - now;
     const remaining   = Math.ceil(remainingMs / 1000); // 3..1
-    const fraction    = 1 - ((remainingMs % 1000) / 1000); // 0..1 within this second
+    const elapsed     = (COUNTDOWN_DURATION - remainingMs) % 1000;
+    const fraction    = elapsed / 1000;      
     const scale       = 0.5 + 0.5 * fraction;             // grow from 0.5× to 1×
     ctx.save();
     ctx.globalAlpha = fraction;                           // fade in
