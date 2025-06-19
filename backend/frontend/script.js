@@ -22,8 +22,9 @@ let up         = false;
 let down       = false;
 let ball       = { x: canvas.width/2, y: canvas.height/2, vx: 5, vy: 4, radius: 8 };
 let playerNumber  = 0;
-let gameStarted   = false;
-let countdownEnd  = 0;   // timestamp when the countdown finishes
+let gameStarted    = false;
+let countdownStart = 0;  // timestamp when the countdown began
+let countdownEnd   = 0;  // timestamp when the countdown ends
 
 // For countdown animation
 const COUNTDOWN_DURATION = 3000; // ms
@@ -63,8 +64,9 @@ startBtn.addEventListener("click", () => {
 socket.on("game-started", () => {
   console.log("▶️ Game actually started!");
   menu.style.display = "none";
-  gameStarted  = true;
-  countdownEnd = Date.now() + COUNTDOWN_DURATION; // 3 second countdown
+  gameStarted    = true;
+  countdownStart = Date.now();                  // mark countdown start
+  countdownEnd   = countdownStart + COUNTDOWN_DURATION; // when to release ball
   ball.x = canvas.width / 2;             // ensure ball starts centered
   ball.y = canvas.height / 2;
   requestAnimationFrame(loop);
@@ -180,9 +182,9 @@ function render() {
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
   ctx.fill();
-}
 
-// Countdown overlay
+
+  // Countdown overlay
   const now = Date.now();
   if (now < countdownEnd) {
     const remainingMs = countdownEnd - now;
@@ -199,7 +201,7 @@ function render() {
     ctx.fillText(remaining.toString(), canvas.width / 2, canvas.height / 2);
     ctx.restore();
   }
-
+}
 // —————— Utility ——————
 function clamp(v, min, max) {
   return v < min ? min : v > max ? max : v;
