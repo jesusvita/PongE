@@ -21,12 +21,12 @@ let paddleY2   = paddleY1;
 let up         = false;
 let down       = false;
 let ball       = { x: canvas.width/2, y: canvas.height/2, vx: 5, vy: 4, radius: 8 };
-let playerNumber = 0;
-let gameStarted  = false;
 let playerNumber  = 0;
 let gameStarted   = false;
 let countdownEnd  = 0;   // timestamp when the countdown finishes
 
+// For countdown animation
+const COUNTDOWN_DURATION = 3000; // ms
 
 // —————— Socket.IO Setup ——————
 const socket = io("https://ponge.fly.dev", {
@@ -64,10 +64,9 @@ socket.on("game-started", () => {
   console.log("▶️ Game actually started!");
   menu.style.display = "none";
   gameStarted  = true;
-  countdownEnd = Date.now() + 3000;      // 3 second countdown
+  countdownEnd = Date.now() + COUNTDOWN_DURATION; // 3 second countdown
   ball.x = canvas.width / 2;             // ensure ball starts centered
   ball.y = canvas.height / 2;
-  requestAnimationFrame(loop);
 });
 
 // Opponent paddle updates
@@ -160,6 +159,18 @@ function render() {
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // Draw field border and markings
+  ctx.strokeStyle = "#0f0";
+  ctx.lineWidth   = 2;
+  ctx.strokeRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
+  ctx.moveTo(canvas.width / 2, 0);
+  ctx.lineTo(canvas.width / 2, canvas.height);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(canvas.width / 2, canvas.height / 2, 70, 0, Math.PI * 2);
+  ctx.stroke();
+  
   ctx.fillStyle = "#0f0";
   ctx.fillRect(0, paddleY1, paddleWidth, paddleHeight);
   ctx.fillRect(canvas.width - paddleWidth, paddleY2, paddleWidth, paddleHeight);
@@ -168,14 +179,24 @@ function render() {
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
   ctx.fill();
 }
+
 // Countdown overlay
-  if (Date.now() < countdownEnd) {
-    const remaining = Math.ceil((countdownEnd - Date.now()) / 1000);
-    ctx.fillStyle = '#0f0';
-    ctx.font = "48px 'Press Start 2P', monospace";
-    ctx.textAlign = 'center';
+  const now = Date.now();
+  if (now < countdownEnd) {
+    const remainingMs = countdownEnd - now;
+    const remaining   = Math.ceil(remainingMs / 1000); // 3..1
+    const fraction    = 1 - ((remainingMs % 1000) / 1000); // 0..1 within this second
+    const scale       = 0.5 + 0.5 * fraction;             // grow from 0.5× to 1×
+    ctx.save();
+    ctx.globalAlpha = fraction;                           // fade in
+    ctx.fillStyle   = '#0f0';
+    ctx.font        = `${96 * scale}px 'Press Start 2P', monospace`;
+    ctx.textAlign   = 'center';
+    ctx.textBaseline = 'middle';
     ctx.fillText(remaining.toString(), canvas.width / 2, canvas.height / 2);
+    ctx.restore();
   }
+
 // —————— Utility ——————
 function clamp(v, min, max) {
   return v < min ? min : v > max ? max : v;
