@@ -52,6 +52,11 @@ io.on('connection', socket => {
     socket.broadcast.emit('ball-update', data);
   });
 
+  // Relay score updates
+  socket.on('score-update', data => {
+    socket.broadcast.emit('score-update', data);
+  });
+  
   // 5) When Player 1 clicks Start, kick off the match
   socket.on('begin-game', () => {
     if (players[socket.id] === 1) {

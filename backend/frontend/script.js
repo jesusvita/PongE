@@ -7,6 +7,8 @@ const startBtn   = document.getElementById('start-btn');
 const waitingTxt = document.getElementById('waiting-text');
 const canvas     = document.getElementById('pong');
 const ctx        = canvas.getContext('2d');
+const score1E1   = document.getElementById('score1');
+const score2E2   = document.getElementById('score2');
 
 // —————— Canvas Setup ——————
 canvas.width  = 800;
@@ -25,6 +27,9 @@ let playerNumber  = 0;
 let gameStarted    = false;
 let countdownStart = 0;  // timestamp when the countdown began
 let countdownEnd   = 0;  // timestamp when the countdown ends
+
+let score1 = 0;
+let score2 = 0;
 
 // For countdown animation
 const COUNTDOWN_DURATION = 3000; // ms
@@ -69,6 +74,9 @@ socket.on("game-started", () => {
   countdownEnd   = countdownStart + COUNTDOWN_DURATION; // when to release ball
   ball.x = canvas.width / 2;             // ensure ball starts centered
   ball.y = canvas.height / 2;
+  score1 = 0;
+  score2 = 0;
+  updatesScoreDIsplay();
   requestAnimationFrame(loop);
 });
 
@@ -81,6 +89,13 @@ socket.on("opponent-paddle", data => {
 // Ball updates
 socket.on("ball-update", data => {
   if (playerNumber !== 1 && gameStarted) ball = data;
+});
+
+// Score updates
+socket.on("score-update", data => {
+  score1 = data.score1;
+  score2 = data.score2;
+  updateScoreDisplay();
 });
 
 socket.on("player-disconnect", () => {
@@ -106,8 +121,10 @@ function loop() {
 }
 
 // —————— Update Game State ——————
+
 function updateState() {
-  // Move my paddle & emit
+
+  // <--- Move my paddle & emit --->
   if (playerNumber === 1) {
     if (up)   paddleY1 -= paddleSpeed;
     if (down) paddleY1 += paddleSpeed;
@@ -146,10 +163,16 @@ function updateState() {
     }
 
     // Score & reset
-    if (ball.x + ball.radius < 0 || ball.x - ball.radius > canvas.width) {
-      ball.x  = canvas.width  / 2;
-      ball.y  = canvas.height / 2;
-      ball.vx = -ball.vx;
+    if (ball.x + ball.radius < 0) {
+        score2++;
+        updateScoreDisplay();
+        socket.emit("score-update", { score1, score2 });
+        resetBall();
+    } else if (ball.x - ball.radius > canvas.width) {
+        score1++;
+        updateScoreDisplay();
+        socket.emit("score-update", { score1, score2 });
+        resetBall();
     }
 
     // Broadcast to player 2
@@ -202,6 +225,18 @@ function render() {
     ctx.restore();
   }
 }
+
+function updateScoreDisplay() {
+  score1El.textContent = score1.toString();
+  score2El.textContent = score2.toString();
+}
+
+function resetBall() {
+  ball.x  = canvas.width  / 2;
+  ball.y  = canvas.height / 2;
+  ball.vx = -ball.vx;
+}
+
 // —————— Utility ——————
 function clamp(v, min, max) {
   return v < min ? min : v > max ? max : v;
