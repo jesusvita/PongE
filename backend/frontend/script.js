@@ -113,6 +113,24 @@ document.addEventListener("keyup", e => {
   if (e.key === "ArrowDown" || e.key === "s") down = false;
 });
 
+// Touch controls for mobile
+function handleTouch(e) {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect  = canvas.getBoundingClientRect();
+  const y     = touch.clientY - rect.top - paddleHeight / 2;
+  if (playerNumber === 1) {
+    paddleY1 = clamp(y, 0, canvas.height - paddleHeight);
+    socket.emit("paddle-move", { y: paddleY1 });
+  } else if (playerNumber === 2) {
+    paddleY2 = clamp(y, 0, canvas.height - paddleHeight);
+    socket.emit("paddle-move", { y: paddleY2 });
+  }
+}
+
+canvas.addEventListener("touchstart", handleTouch, { passive: false });
+canvas.addEventListener("touchmove",  handleTouch, { passive: false });
+
 // —————— Main Loop ——————
 function loop() {
   if (!gameStarted) return;
