@@ -7,8 +7,7 @@ const startBtn   = document.getElementById('start-btn');
 const waitingTxt = document.getElementById('waiting-text');
 const canvas     = document.getElementById('pong');
 const ctx        = canvas.getContext('2d');
-const score1E1   = document.getElementById('score1');
-const score2E2   = document.getElementById('score2');
+const scoreboard = document.getElementById('scoreboard');
 
 // —————— Canvas Setup ——————
 canvas.width  = 800;
@@ -69,6 +68,8 @@ startBtn.addEventListener("click", () => {
 socket.on("game-started", () => {
   console.log("▶️ Game actually started!");
   menu.style.display = "none";
+  scoreboard.style.display = "block";
+  canvas.style.display = "block"; // reveal the field
   gameStarted    = true;
   countdownStart = Date.now();                  // mark countdown start
   countdownEnd   = countdownStart + COUNTDOWN_DURATION; // when to release ball
@@ -76,7 +77,7 @@ socket.on("game-started", () => {
   ball.y = canvas.height / 2;
   score1 = 0;
   score2 = 0;
-  updatesScoreDIsplay();
+  updateScoreDisplay();
   requestAnimationFrame(loop);
 });
 
@@ -227,8 +228,10 @@ function render() {
 }
 
 function updateScoreDisplay() {
-  score1El.textContent = score1.toString();
-  score2El.textContent = score2.toString();
+  const score1El = document.getElementById('score1');
+  const score2El = document.getElementById('score2');
+  if (score1El) score1El.textContent = score1.toString();
+  if (score2El) score2El.textContent = score2.toString();
 }
 
 function resetBall() {
