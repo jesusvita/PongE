@@ -30,8 +30,13 @@ let countdownEnd   = 0;  // timestamp when the countdown ends
 let score1 = 0;
 let score2 = 0;
 
-const TAIL_LENGTH = 10;
-let ballTrail = [];
+// Ball appearance
+const BALL_COLOR   = '#fff';
+
+// Ball tail
+const TAIL_LENGTH  = 10;
+const TRAIL_ALPHA  = 0.4; // maximum opacity
+let ballTrail      = [];
 
 // For countdown animation
 const COUNTDOWN_DURATION = 3000; // ms
@@ -228,21 +233,29 @@ function render() {
   ctx.fillStyle = "#0f0";
   ctx.fillRect(0, paddleY1, paddleWidth, paddleHeight);
   ctx.fillRect(canvas.width - paddleWidth, paddleY2, paddleWidth, paddleHeight);
-    // Draw ball trail
-    for (let i = 0; i < ballTrail.length; i++) {
-        const pos = ballTrail[i];
-        const alpha = (i + 1) / ballTrail.length;
-        ctx.globalAlpha = alpha * 0.7;
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, ball.radius, 0, Math.PI * 2);
-        ctx.fill();
+  
+  // Draw ball trail
+  ctx.fillStyle = BALL_COLOR;
+  for (let i = 0; i < ballTrail.length; i++) {
+    const pos    = ballTrail[i];
+    const t      = (i + 1) / ballTrail.length;
+    const alpha  = t * TRAIL_ALPHA;
+    const radius = ball.radius * t;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+    ctx.fill();
   }
   ctx.globalAlpha = 1;
-  
+
+  // Draw ball
+  ctx.fillStyle = BALL_COLOR;
+  ctx.shadowColor = BALL_COLOR;
+  ctx.shadowBlur  = 10;
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
   ctx.fill();
-
+  ctx.shadowBlur = 0;
 
   // Countdown overlay
   const now = Date.now();
