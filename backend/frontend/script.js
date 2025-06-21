@@ -26,8 +26,8 @@ const INITIAL_VX = 5;
 const INITIAL_VY = 4;
 let ball       = { x: canvas.width/2, y: canvas.height/2, vx: INITIAL_VX, vy: INITIAL_VY, radius: 8 };
 let hitCount   = 0;
-const MAX_HITS = 10;
-const SPEED_MULT = 1.1:
+const MAX_HITS = 20;
+const SPEED_MULT = 1.13;
 let playerNumber  = 0;
 let gameStarted    = false;
 let countdownStart = 0;  // timestamp when the countdown began
@@ -193,15 +193,15 @@ function updateState() {
     }
 
     // Paddle collisions
-    if (ball.x - ball.radius <= paddleWidth + paddleWidth &&
-        ball.y >= paddleY1 && ball.y <= paddleY1 + paddleHeight) {
-      ball.x = paddleWidth + ball.radius; // avoid sticking
-      bouncePaddle();
+    if (ball.x - ball.radius <= paddleMargin + paddleWidth &&
+            ball.y >= paddleY1 && ball.y <= paddleY1 + paddleHeight) {
+        ball.x = paddleMargin + paddleWidth + ball.radius; // avoid sticking
+        bouncePaddle();
     }
     if (ball.x + ball.radius >= canvas.width - paddleMargin - paddleWidth &&
-        ball.y >= paddleY2 && ball.y <= paddleY2 + paddleHeight) {
-      ball.x = canvas.width - paddleWidth - ball.radius;
-      bouncePaddle();
+            ball.y >= paddleY2 && ball.y <= paddleY2 + paddleHeight) {
+        ball.x = canvas.width - paddleMargin - paddleWidth - ball.radius;
+        bouncePaddle();
     }
 
     // Score & reset

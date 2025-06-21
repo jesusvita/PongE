@@ -29,11 +29,13 @@ html, body {
 #menu h1 {
   font-size: 48px;
   margin: 0 0 20px;
-  text-shadow: 0 0 10px #0f0;
+  /* Remove glow for a cleaner retro look */
+  text-shadow: none;
+  letter-spacing: 2px;
 }
 
 #start-btn {
-  background: #222;
+  background: #000;
   border: 2px solid #0f0;
   padding: 10px 20px;
   font-size: 14px;
@@ -44,10 +46,10 @@ html, body {
 
 #start-btn:enabled {
   background: #000;
-  color: #fff;
-  border-color: #fff;
+  color: #0f0;
+  border-color: #0f0;
   cursor: pointer;
-  text-shadow: 0 0 5px #fff;
+  text-shadow: 0 0 5px #0f0; 
 }
 
 #waiting-text {
