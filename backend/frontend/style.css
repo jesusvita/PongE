@@ -60,7 +60,7 @@ html, body {
 /* SCOREBOARD */
 #scoreboard {
   position: absolute;
-  top: 10px;
+  top: 2vh;
   left: 50%;
   transform: translateX(-50%);
   font-size: 24px;
@@ -87,4 +87,10 @@ html, body {
   height: 80vh;
   background: #000;
   z-index: 1;              /* <- put canvas behind the menu */
+}
+
+@supports (height: 1dvh) {
+  #pong {
+    height: 80dvh;
+  }
 }

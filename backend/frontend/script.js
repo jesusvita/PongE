@@ -17,11 +17,17 @@ canvas.height = 400;
 const paddleWidth  = 10;
 const paddleHeight = 100;
 const paddleSpeed  = 6;
+const paddleMargin = 10; // distance from edge to paddles
 let paddleY1   = (canvas.height - paddleHeight) / 2;
 let paddleY2   = paddleY1;
 let up         = false;
 let down       = false;
-let ball       = { x: canvas.width/2, y: canvas.height/2, vx: 5, vy: 4, radius: 8 };
+const INITIAL_VX = 5;
+const INITIAL_VY = 4;
+let ball       = { x: canvas.width/2, y: canvas.height/2, vx: INITIAL_VX, vy: INITIAL_VY, radius: 8 };
+let hitCount   = 0;
+const MAX_HITS = 10;
+const SPEED_MULT = 1.1:
 let playerNumber  = 0;
 let gameStarted    = false;
 let countdownStart = 0;  // timestamp when the countdown began
@@ -129,7 +135,9 @@ function handleTouch(e) {
   e.preventDefault();
   const touch = e.touches[0];
   const rect  = canvas.getBoundingClientRect();
-  const y     = touch.clientY - rect.top - paddleHeight / 2;
+  // Account for CSS scaling so the paddle aligns exactly
+  const scaleY = canvas.height / rect.height;
+  const y     = (touch.clientY - rect.top) * scaleY - paddleHeight / 2;
   if (playerNumber === 1) {
     paddleY1 = clamp(y, 0, canvas.height - paddleHeight);
     socket.emit("paddle-move", { y: paddleY1 });
@@ -185,13 +193,15 @@ function updateState() {
     }
 
     // Paddle collisions
-    if (ball.x - ball.radius <= paddleWidth &&
+    if (ball.x - ball.radius <= paddleWidth + paddleWidth &&
         ball.y >= paddleY1 && ball.y <= paddleY1 + paddleHeight) {
-      ball.vx *= -1;
+      ball.x = paddleWidth + ball.radius; // avoid sticking
+      bouncePaddle();
     }
-    if (ball.x + ball.radius >= canvas.width - paddleWidth &&
+    if (ball.x + ball.radius >= canvas.width - paddleMargin - paddleWidth &&
         ball.y >= paddleY2 && ball.y <= paddleY2 + paddleHeight) {
-      ball.vx *= -1;
+      ball.x = canvas.width - paddleWidth - ball.radius;
+      bouncePaddle();
     }
 
     // Score & reset
@@ -231,9 +241,9 @@ function render() {
   ctx.stroke();
   
   ctx.fillStyle = "#0f0";
-  ctx.fillRect(0, paddleY1, paddleWidth, paddleHeight);
-  ctx.fillRect(canvas.width - paddleWidth, paddleY2, paddleWidth, paddleHeight);
-  
+  ctx.fillRect(paddleMargin, paddleY1, paddleWidth, paddleHeight);
+  ctx.fillRect(canvas.width - paddleWidth - paddleMargin, paddleY2, paddleWidth, paddleHeight);
+
   // Draw ball trail
   ctx.fillStyle = BALL_COLOR;
   for (let i = 0; i < ballTrail.length; i++) {
@@ -283,10 +293,25 @@ function updateScoreDisplay() {
   if (score2El) score2El.textContent = score2.toString();
 }
 
+function bouncePaddle() {
+  let speed = Math.hypot(ball.vx, ball.vy);
+  let angle = Math.atan2(ball.vy, ball.vx);
+  angle = Math.PI - angle;
+  angle += (Math.random() - 0.5) * 0.1; // tiny random variation
+  if (hitCount < MAX_HITS) {
+    speed *= SPEED_MULT;
+    hitCount++;
+  }
+  ball.vx = speed * Math.cos(angle);
+  ball.vy = speed * Math.sin(angle);
+}
+
 function resetBall() {
   ball.x  = canvas.width  / 2;
   ball.y  = canvas.height / 2;
-  ball.vx = -ball.vx;
+  ball.vx = ball.vx > 0 ? -INITIAL_VX : INITIAL_VX;
+  ball.vy = INITIAL_VY;
+  hitCount = 0;
   ballTrail = [];
 }
 
