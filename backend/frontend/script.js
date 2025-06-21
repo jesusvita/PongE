@@ -10,8 +10,8 @@ const ctx        = canvas.getContext('2d');
 const scoreboard = document.getElementById('scoreboard');
 
 // —————— Canvas Setup ——————
-canvas.width  = 800;
-canvas.height = 600;
+canvas.width  = 600;
+canvas.height = 400;
 
 // —————— Game State ——————
 const paddleWidth  = 10;
@@ -29,6 +29,9 @@ let countdownEnd   = 0;  // timestamp when the countdown ends
 
 let score1 = 0;
 let score2 = 0;
+
+const TAIL_LENGTH = 10;
+let ballTrail = [];
 
 // For countdown animation
 const COUNTDOWN_DURATION = 3000; // ms
@@ -89,7 +92,10 @@ socket.on("opponent-paddle", data => {
 
 // Ball updates
 socket.on("ball-update", data => {
-  if (playerNumber !== 1 && gameStarted) ball = data;
+    if (playerNumber !== 1 && gameStarted) {
+    ball = data;
+    addToTrail(ball);
+  }
 });
 
 // Score updates
@@ -165,6 +171,8 @@ function updateState() {
     }
     ball.x += ball.vx;
     ball.y += ball.vy;
+    addToTrail(ball);
+
 
     // Bounce off walls
     if (ball.y - ball.radius <= 0 || ball.y + ball.radius >= canvas.height) {
@@ -220,7 +228,17 @@ function render() {
   ctx.fillStyle = "#0f0";
   ctx.fillRect(0, paddleY1, paddleWidth, paddleHeight);
   ctx.fillRect(canvas.width - paddleWidth, paddleY2, paddleWidth, paddleHeight);
-
+    // Draw ball trail
+    for (let i = 0; i < ballTrail.length; i++) {
+        const pos = ballTrail[i];
+        const alpha = (i + 1) / ballTrail.length;
+        ctx.globalAlpha = alpha * 0.7;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
   ctx.fill();
@@ -256,9 +274,15 @@ function resetBall() {
   ball.x  = canvas.width  / 2;
   ball.y  = canvas.height / 2;
   ball.vx = -ball.vx;
+  ballTrail = [];
 }
 
 // —————— Utility ——————
 function clamp(v, min, max) {
   return v < min ? min : v > max ? max : v;
+}
+
+function addToTrail(pos) {
+  ballTrail.push({ x: pos.x, y: pos.y });
+  if (ballTrail.length > TAIL_LENGTH) ballTrail.shift();
 }
