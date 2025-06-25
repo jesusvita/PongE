@@ -19,6 +19,7 @@ const PORT = process.env.PORT || 8080;
 // Track connected players by socket ID
 let players = {};
 
+let rematchRequests = {};
 // Serve your static front-end from ./frontend
 app.use(express.static(path.join(__dirname, 'frontend')));
 
@@ -52,11 +53,26 @@ io.on('connection', socket => {
     socket.broadcast.emit('ball-update', data);
   });
 
+  // Inform opponent to reset round with countdown
+  socket.on('reset-round', () => {
+    socket.broadcast.emit('reset-round');
+  });
+
   // Relay score updates
   socket.on('score-update', data => {
     socket.broadcast.emit('score-update', data);
   });
-  
+  socket.on("game-over", data => {
+    io.emit("game-over", data);
+  });
+  socket.on("rematch", () => {
+    rematchRequests[socket.id] = true;
+    if (Object.keys(rematchRequests).length === 2) {
+      rematchRequests = {};
+      io.emit("rematch-start");
+    }
+  });
+
   // 5) When Player 1 clicks Start, kick off the match
   socket.on('begin-game', () => {
     if (players[socket.id] === 1) {
@@ -69,7 +85,8 @@ io.on('connection', socket => {
   socket.on('disconnect', () => {
     console.log(`❌ User disconnected: ${socket.id}`);
     delete players[socket.id];
-    
+   
+    delete rematchRequests[socket.id];
     // If one player remains, promote them to Player 1
     const ids = Object.keys(players);
     if (ids.length === 1) {

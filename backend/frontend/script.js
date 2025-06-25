@@ -10,10 +10,14 @@ const ctx        = canvas.getContext('2d');
 const scoreboard = document.getElementById('scoreboard');
 const popup      = document.getElementById('popup');
 const popupMsg   = document.getElementById('popup-message');
+const resultPopup = document.getElementById("result");
+const resultMsg   = document.getElementById("result-message");
+const rematchBtn  = document.getElementById("rematch-btn");
 
 // —————— Canvas Setup ——————
 canvas.width  = 600;
 canvas.height = 400;
+const CENTER_CIRCLE_RADIUS = Math.min(canvas.width, canvas.height) * 0.15;
 
 // —————— Game State ——————
 const paddleWidth  = 10;
@@ -46,6 +50,7 @@ const TAIL_LENGTH  = 10;
 const TRAIL_ALPHA  = 0.4; // maximum opacity
 let ballTrail      = [];
 
+let rematchSent = false;
 // For countdown animation
 const COUNTDOWN_DURATION = 3000; // ms
 
@@ -82,19 +87,8 @@ startBtn.addEventListener("click", () => {
 
 // Real kickoff
 socket.on("game-started", () => {
-  console.log("▶️ Game actually started!");
-  menu.style.display = "none";
-  scoreboard.style.display = "block";
-  canvas.style.display = "block"; // reveal the field
-  gameStarted    = true;
-  countdownStart = Date.now();                  // mark countdown start
-  countdownEnd   = countdownStart + COUNTDOWN_DURATION; // when to release ball
-  ball.x = canvas.width / 2;             // ensure ball starts centered
-  ball.y = canvas.height / 2;
-  score1 = 0;
-  score2 = 0;
-  updateScoreDisplay();
-  requestAnimationFrame(loop);
+    console.log("Game started");
+    startGame();
 });
 
 // Opponent paddle updates
@@ -118,11 +112,26 @@ socket.on("score-update", data => {
   updateScoreDisplay();
 });
 
+// Start countdown after a goal scored by opponent
+socket.on("reset-round", () => {
+  resetBall();
+  startCountdown();
+});
+
 socket.on("player-disconnect", () => {
     showPopup("Your opponent disconnected, going back to main menu.");
     resetToMenu("Waiting for another player...");
     // hide popup after short delay
     setTimeout(hidePopup, 3000);
+});
+socket.on("rematch-start", () => {
+  resultPopup.style.display = "none";
+  rematchSent = false;
+  startGame();
+});
+
+socket.on("game-over", data => {
+  showResult(data.winner);
 });
 
 socket.on("became-player1", () => {
@@ -219,16 +228,30 @@ function updateState() {
         score2++;
         updateScoreDisplay();
         socket.emit("score-update", { score1, score2 });
-        resetBall();
+        if (score2 >= 8) {
+            gameStarted = false;
+            socket.emit("game-over", { winner: 2 });
+        } else {
+            resetBall();
+        }
+        startCountdown();
+        socket.emit("reset-round");
     } else if (ball.x - ball.radius > canvas.width) {
         score1++;
         updateScoreDisplay();
         socket.emit("score-update", { score1, score2 });
-        resetBall();
+        if (score1 >= 8) {
+            gameStarted = false;
+            socket.emit("game-over", { winner: 1 });
+        } else {
+            resetBall();
+        }
+        startCountdown();
+        socket.emit("reset-round");
     }
 
     // Broadcast to player 2
-    socket.emit("ball-move", ball);
+    if (gameStarted) socket.emit("ball-move", ball);
   }
 }
 
@@ -247,7 +270,7 @@ function render() {
   ctx.lineTo(canvas.width / 2, canvas.height);
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(canvas.width / 2, canvas.height / 2, 70, 0, Math.PI * 2);
+  ctx.arc(canvas.width / 2, canvas.height / 2, CENTER_CIRCLE_RADIUS, 0, Math.PI * 2);
   ctx.stroke();
   
   ctx.fillStyle = "#0f0";
@@ -325,6 +348,11 @@ function resetBall() {
   ballTrail = [];
 }
 
+function startCountdown() {
+  countdownStart = Date.now();
+  countdownEnd   = countdownStart + COUNTDOWN_DURATION;
+}
+
 // —————— Utility ——————
 function clamp(v, min, max) {
   return v < min ? min : v > max ? max : v;
@@ -355,3 +383,34 @@ function resetToMenu(message) {
   startBtn.disabled = true;
   waitingTxt.textContent = message || 'Waiting for another player...';
 }
+
+function startGame() {
+  menu.style.display = "none";
+  scoreboard.style.display = "block";
+  canvas.style.display = "block";
+  gameStarted    = true;
+  countdownStart = Date.now();
+  countdownEnd   = countdownStart + COUNTDOWN_DURATION;
+  ball.x = canvas.width / 2;
+  ball.y = canvas.height / 2;
+  score1 = 0;
+  score2 = 0;
+  updateScoreDisplay();
+  requestAnimationFrame(loop);
+}
+
+function showResult(winner) {
+  gameStarted = false;
+  resultPopup.style.display = 'block';
+  resultMsg.textContent = (playerNumber === winner) ? 'Winner' : 'Loser';
+  rematchBtn.disabled = false;
+}
+
+rematchBtn.addEventListener('click', () => {
+  if (!rematchSent) {
+    rematchSent = true;
+    rematchBtn.disabled = true;
+    resultMsg.textContent = 'Waiting for opponent...';
+    socket.emit('rematch');
+  }
+});
