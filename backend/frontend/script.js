@@ -8,6 +8,8 @@ const waitingTxt = document.getElementById('waiting-text');
 const canvas     = document.getElementById('pong');
 const ctx        = canvas.getContext('2d');
 const scoreboard = document.getElementById('scoreboard');
+const popup      = document.getElementById('popup');
+const popupMsg   = document.getElementById('popup-message');
 
 // —————— Canvas Setup ——————
 canvas.width  = 600;
@@ -117,7 +119,15 @@ socket.on("score-update", data => {
 });
 
 socket.on("player-disconnect", () => {
-  alert("Opponent left. Refresh to re-match.");
+    showPopup("Your opponent disconnected, going back to main menu.");
+    resetToMenu("Waiting for another player...");
+    // hide popup after short delay
+    setTimeout(hidePopup, 3000);
+});
+
+socket.on("became-player1", () => {
+  playerNumber = 1;
+  console.log("Promoted to player 1");
 });
 
 // —————— Input Handling ——————
@@ -323,4 +333,25 @@ function clamp(v, min, max) {
 function addToTrail(pos) {
   ballTrail.push({ x: pos.x, y: pos.y });
   if (ballTrail.length > TAIL_LENGTH) ballTrail.shift();
+}
+
+
+// Show a popup message in the center of the screen
+function showPopup(msg) {
+  popupMsg.textContent = msg;
+  popup.style.display = 'block';
+}
+
+function hidePopup() {
+  popup.style.display = 'none';
+}
+
+// Return to the menu screen
+function resetToMenu(message) {
+  gameStarted = false;
+  menu.style.display = 'block';
+  scoreboard.style.display = 'none';
+  canvas.style.display = 'none';
+  startBtn.disabled = true;
+  waitingTxt.textContent = message || 'Waiting for another player...';
 }

@@ -96,3 +96,18 @@ html, body {
     height: 80dvh;
   }
 }
+
+/* Popup shown when opponent disconnects */
+#popup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #0f0;
+  padding: 20px;
+  z-index: 15;
+  text-align: center;
+  display: none;
+  color: #0f0;
+}

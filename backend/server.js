@@ -69,6 +69,15 @@ io.on('connection', socket => {
   socket.on('disconnect', () => {
     console.log(`❌ User disconnected: ${socket.id}`);
     delete players[socket.id];
+    
+    // If one player remains, promote them to Player 1
+    const ids = Object.keys(players);
+    if (ids.length === 1) {
+      const remainingId = ids[0];
+      players[remainingId] = 1;
+      io.to(remainingId).emit('became-player1');
+    }
+
     io.emit('player-disconnect');
   });
 });
